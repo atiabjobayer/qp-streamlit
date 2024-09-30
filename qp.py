@@ -1,10 +1,33 @@
 import streamlit as st
 import requests
 import json
+import uuid
+from streamlit_cookies_manager import EncryptedCookieManager
 
-ACCESS_TOKEN = st.secrets["access_token"]
-CLIENT_ID = st.secrets["client_id"]
+
+ACCESS_TOKEN = "xG5LsawaTN4Af6aDB1QhbefabvG7MNdS9+imnVyQbKZdwIN9zcgw5up+mbc87xza"
+CLIENT_ID = "saas_stern_trisso_com"
 API_ENDPOINT = "https://askrobot.azurewebsites.net"
+COOKIE_ENCRYPTION_KEY = "someencryptionkey"
+
+cookies = EncryptedCookieManager(
+    prefix="torahsearch",
+    password=COOKIE_ENCRYPTION_KEY
+)
+
+if not cookies.ready():
+    st.stop()
+
+# Check if 'user_id' cookie exists
+if 'user_id' not in cookies:
+    # Generate a unique user_id
+    user_id = str(uuid.uuid4())
+    # Set the cookie with the user_id
+    cookies['user_id'] = user_id
+    cookies.save()
+else:
+    # Retrieve the user_id from the cookie
+    user_id = cookies['user_id']
 
 
 def is_hebrew(char):
@@ -103,6 +126,9 @@ def call_answer_api(prompt):
             "engine": "answer",  # Use "answer" for RAG, "search" for searching
             "client": CLIENT_ID,
             "question": prompt,  # Your natural language query
+            "user_info": {
+                'id': user_id
+            }
         },
     )
     response_json = json.loads(response.text)
@@ -133,4 +159,3 @@ def call_search_api(prompt):
 
 if __name__ == "__main__":
     main()
-
